@@ -37,6 +37,7 @@ return {
     matchAddCursor = examples.matchAddCursor,
     matchSkipCursor = examples.matchSkipCursor,
     matchAllAddCursors = examples.matchAllAddCursors,
+    matchVisualObjects = examples.matchVisualObjects,
     lineAddCursor = examples.lineAddCursor,
     lineSkipCursor = examples.lineSkipCursor,
     handleMouse = examples.handleMouse,

@@ -693,4 +693,118 @@ function examples.addCursorOperator()
     vim.fn.feedkeys("g@", "nt")
 end
 
+--- @param a Cursor
+--- @param b Cursor
+--- @return boolean past If the beginning of b is after the end of a
+local function visual_past(a, b)
+    local _, a_end = a:getVisual()
+    local b_start, _ = b:getVisual()
+    return b_start[1] > a_end[1]
+        or b_start[1] == a_end[1] and b_start[2] > a_end[2]
+end
+
+--- @param a Cursor
+--- @param b Cursor
+--- @return boolean same If a and b select the same text
+local function visual_same(a, b)
+    local a_start, a_end = a:getVisual()
+    local b_start, b_end = b:getVisual()
+    return a_start[1] == b_start[1]
+        and a_start[2] == b_start[2]
+        and a_end[1] == b_end[1]
+        and a_end[2] == b_end[2]
+end
+
+--- @param cursor Cursor
+--- @return boolean success If the cursor was moved
+local function move_cursor_next(cursor)
+    local start_line = cursor:line()
+    local start_col = cursor:col()
+    local function moved()
+        return cursor:col() ~= start_col or cursor:line() ~= start_line
+    end
+
+    cursor:feedkeys("l")
+    if moved() then
+        return true
+    end
+
+    cursor:feedkeys("j0")
+    return moved()
+end
+
+function examples.matchVisualObjects(textobject)
+    mc.action(function(ctx)
+        local orig_cursor = ctx:mainCursor()
+
+        -- Search from the start of the original selection.
+        local search_cursor = orig_cursor:clone()
+        search_cursor:feedkeys(TERM_CODES.ESC)
+        search_cursor:feedkeys("`<")
+
+        -- Search to the end of the original selection.
+        local end_cursor = orig_cursor:clone()
+        end_cursor:feedkeys(TERM_CODES.ESC)
+        end_cursor:feedkeys("`>")
+
+        local prev_match = nil
+        while true do
+            -- Record this search position.
+            local search_line = search_cursor:line()
+            local search_col = search_cursor:col()
+
+            -- Use the remap option to take advantage of user-defined textobjects.
+            search_cursor:feedkeys("v" .. textobject, { remap = true })
+
+            if search_cursor:mode() == "n" then
+                -- If we tried to do visual selection and ended up in normal mode,
+                -- there was nothing to select.
+                break
+            elseif visual_past(end_cursor, search_cursor) then
+                -- If the next matching object is beyond the original selection,
+                -- we've found all the objects _in_ the selection.
+                break
+            elseif prev_match and visual_same(prev_match, search_cursor) then
+            -- We found the same object again.
+            else
+                prev_match = search_cursor:clone()
+            end
+
+            -- Move to the end of the matched object.
+            search_cursor:feedkeys(TERM_CODES.ESC)
+            search_cursor:feedkeys("`>")
+
+            -- Is the cursor closer to the end than the location of the last search?
+            local function after_previous()
+                return search_cursor:line() > search_line
+                    or search_cursor:line() == search_line
+                        and search_cursor:col() > search_col
+            end
+
+            -- Some i textobjects move the cursor to before the search position. To
+            -- prepare for the next search, move the cursor beyond the end of the
+            -- current match, or past where we started this iteration of search,
+            -- whichever is closer to the end.
+            if after_previous() then
+                search_line = search_cursor:line()
+                search_col = search_cursor:col()
+            end
+
+            local at_end = false
+            while not at_end and not after_previous() do
+                at_end = not move_cursor_next(search_cursor)
+            end
+
+            -- If we couldn't move the search, then we're at the end of file.
+            if not after_previous() then
+                break
+            end
+        end
+
+        search_cursor:delete()
+        end_cursor:delete()
+        orig_cursor:delete()
+    end)
+end
+
 return examples
