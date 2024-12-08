@@ -1461,6 +1461,94 @@ function Cursor:getVisual()
         {self._visualEnd[2], self._visualEnd[3], 0}
 end
 
+-- NOTE, overlapping concept with `SimplePos`
+--- @class Position
+--- @field line integer
+--- @field col integer
+local Position = {}
+Position.__index = Position
+
+--- @param line integer
+--- @param col integer
+--- @return Position
+function Position:new(line, col)
+    local newPosition = { line = line, col = col }
+    return setmetatable(newPosition, self)
+end
+
+---@param a Position
+---@param b Position
+---@return boolean
+function Position.__lt(a, b)
+    return a.line < b.line or a.line == b.line and a.col < b.col
+end
+
+---@param a Position
+---@param b Position
+---@return boolean
+function Position.__eq(a, b)
+    return a.line == b.line and a.col == b.col
+end
+
+--- @class Range
+--- @field start Position inclusive start position
+--- @field stop Position inclusive end position
+--- @field block boolean excluding cols outside start.col and end.col on all lines
+local Range = {}
+Range.__index = Range
+
+--- @param start Position
+--- @param stop Position
+--- @param block? boolean
+--- @return Range
+function Range:new(start, stop, block)
+    local newRange = { start = start, stop = stop, block = block }
+    return setmetatable(newRange, self)
+end
+
+--- @param other Range
+--- @return boolean containsOther the other range is strictly contained
+function Range:contains(other)
+    if self.block or other.block then
+        return not (
+            other.stop.line < self.start.line
+            or self.stop.line < other.start.line
+            or other.stop.col < self.start.col
+            or self.stop.col < other.start.col
+        )
+    end
+
+    return not (other.stop < self.start or self.stop < other.start)
+end
+
+--- @param a Range
+--- @param b Range
+--- @return boolean
+function Range.__eq(a, b)
+    return a.start == b.start and a.stop == b.stop and a.block == b.block
+end
+
+--- NOTE: overlapping functionality with `getVisual`
+--- @return Range
+function Cursor:getRange()
+    local visualStartPos, visualEndPos = self:getVisual()
+
+    local range = Range:new(
+        Position:new(visualStartPos[1], visualStartPos[2]),
+        Position:new(visualEndPos[1], visualEndPos[2]),
+        false
+    )
+
+    if self._mode == "V" then
+        range.start.col = 1
+        range.stop.col = INT_MAX
+    elseif self._mode == TERM_CODES.CTRL_V then
+        range.block = true
+    end
+
+    return range
+end
+
 --- Returns this cursor's current mode.
 --- It should only ever be in normal, visual, or select modes.
 --- @return string: "n" | "v" | "V" | <c-v> | "s" | "S" | <c-s>
