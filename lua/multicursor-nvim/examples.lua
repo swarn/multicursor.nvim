@@ -727,15 +727,16 @@ function examples.matchVisualObjects(textobject)
     mc.action(function(ctx)
         local orig_cursor = ctx:mainCursor()
 
+        -- NOTE: cursor:setMode('n'):feedkeys("`<") is not the same
+        -- as cursor:feedkeys(TERM_CODES.ESC .. "`<")
+
         -- Search from the start of the original selection.
         local search_cursor = orig_cursor:clone()
-        search_cursor:feedkeys(TERM_CODES.ESC)
-        search_cursor:feedkeys("`<")
+        search_cursor:feedkeys(TERM_CODES.ESC .. "`<")
 
         -- Search to the end of the original selection.
         local end_cursor = orig_cursor:clone()
-        end_cursor:feedkeys(TERM_CODES.ESC)
-        end_cursor:feedkeys("`>")
+        end_cursor:feedkeys(TERM_CODES.ESC .. "`>")
 
         local prev_match = nil
         while true do
@@ -761,8 +762,7 @@ function examples.matchVisualObjects(textobject)
             end
 
             -- Move to the end of the matched object.
-            search_cursor:feedkeys(TERM_CODES.ESC)
-            search_cursor:feedkeys("`>")
+            search_cursor:feedkeys(TERM_CODES.ESC .. "`>")
 
             -- Is the cursor closer to the end than the location of the last search?
             local function after_previous()
