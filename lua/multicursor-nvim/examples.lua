@@ -68,8 +68,7 @@ function examples.matchCursors(pattern)
         local newCursors = {}
         ctx:forEachCursor(function(cursor)
             if cursor:hasSelection() then
-                newCursors = tbl.concat(
-                    newCursors, cursor:splitVisualLines())
+                newCursors = tbl.concat(newCursors, cursor:splitVisualLines())
             else
                 newCursors[#newCursors + 1] = cursor
                 cursor:setMode("v")
@@ -119,8 +118,7 @@ end
 function examples.swapCursors(direction, wrap)
     mc.action(function(ctx)
         local mainCursor = ctx:mainCursor()
-        local otherCursor = ctx:seekCursor(
-            mainCursor:getPos(), direction, wrap)
+        local otherCursor = ctx:seekCursor(mainCursor:getPos(), direction, wrap)
         if otherCursor and otherCursor ~= mainCursor then
             local mainLines = mainCursor:getVisualLines()
             local otherLines = otherCursor:getVisualLines()
@@ -136,14 +134,14 @@ function examples.alignCursors()
         local startLine = ctx:firstCursor():line()
         local endLine = ctx:lastCursor():line()
 
-        local lines = vim.api.nvim_buf_get_lines(
-            0, startLine - 1, endLine, false)
+        local lines =
+            vim.api.nvim_buf_get_lines(0, startLine - 1, endLine, false)
 
         local rows = {}
         local prevLine = nil
         ctx:forEachCursor(function(cursor)
             local col = #lines[cursor:line() - startLine + 1] > 0
-                and cursor:col()
+                    and cursor:col()
                 or 0
             -- if col == 0 then
             --     cursor:delete()
@@ -160,12 +158,14 @@ function examples.alignCursors()
             row[#row + 1] = col
         end)
 
-        local numColumns = tbl.reduce(rows,
-            function(n, row) return math.max(n, #row) end, 0)
+        local numColumns = tbl.reduce(rows, function(n, row)
+            return math.max(n, #row)
+        end, 0)
 
         for i = 1, numColumns do
-            local maxCol = tbl.reduce(rows,
-                function (n, row) return math.max(n, row[i] or 0) end, 0)
+            local maxCol = tbl.reduce(rows, function(n, row)
+                return math.max(n, row[i] or 0)
+            end, 0)
             for _, row in ipairs(rows) do
                 row[i] = maxCol - row[i]
                 for j = i + 1, numColumns do
@@ -218,11 +218,9 @@ local function addCursor(ctx, motion, opts)
         end
         local newPos = mainCursor:getPos()
         local rowDiff = newPos[1] - vs[1]
-        local colDiff = mainCursor:mode() == "n"
-            and newPos[2] - vs[2]
-            or atVisStart
-                and vs[2] - newPos[2]
-                or newPos[2] - ve[2]
+        local colDiff = mainCursor:mode() == "n" and newPos[2] - vs[2]
+            or atVisStart and vs[2] - newPos[2]
+            or newPos[2] - ve[2]
         mainCursor:setMode(oldMode)
         local startRow = vs[1] + rowDiff
         local startCol = vs[2] + colDiff
@@ -233,15 +231,9 @@ local function addCursor(ctx, motion, opts)
             endCol = ve[2]
         end
         if atVisStart then
-            mainCursor:setVisual(
-                { endRow, endCol },
-                { startRow, startCol }
-            )
+            mainCursor:setVisual({ endRow, endCol }, { startRow, startCol })
         else
-            mainCursor:setVisual(
-                { startRow, startCol },
-                { endRow, endCol }
-            )
+            mainCursor:setVisual({ startRow, startCol }, { endRow, endCol })
         end
     else
         ctx:forEachCursor(function(cursor)
@@ -283,16 +275,14 @@ function examples.handleMouse()
         local pos = {
             mousePos.line,
             mousePos.column,
-            vim.o.virtualedit == "all"
-                and mousePos.coladd
-                or nil
+            vim.o.virtualedit == "all" and mousePos.coladd or nil,
         }
         local existingCursor = ctx:getCursorAtPos(pos)
         if existingCursor then
             existingCursor:delete()
         else
             local mainCursor = ctx:mainCursor()
-                mainCursor:clone()
+            mainCursor:clone()
             mainCursor:setPos(pos):setVisualAnchor(pos)
         end
     end)
@@ -437,7 +427,8 @@ local function selectRelativeCursor(direction, wrap)
             end
         else
             local opts = { disabledCursors = true }
-            local cursor = ctx:seekCursor(mainCursor:getPos(), direction, wrap, opts)
+            local cursor =
+                ctx:seekCursor(mainCursor:getPos(), direction, wrap, opts)
             if cursor then
                 cursor:select()
                 mainCursor:delete()
@@ -482,7 +473,7 @@ local function escapeRegex(regex)
 end
 
 local function isKeyword(s)
-    return vim.fn.match(s, '\\v^\\k+$') >= 0
+    return vim.fn.match(s, "\\v^\\k+$") >= 0
 end
 
 --- @param direction? -1 | 1
@@ -497,7 +488,8 @@ local function matchAddCursor(direction, add)
             local c = mainCursor:col()
             cursorChar = string.sub(mainCursor:getLine(), c, c)
             cursorWord = mainCursor:getCursorWord()
-            if cursorChar ~= ""
+            if
+                cursorChar ~= ""
                 and isKeyword(cursorChar)
                 and string.find(cursorWord, cursorChar, 1, true)
             then
@@ -509,7 +501,8 @@ local function matchAddCursor(direction, add)
             local regex
             local hasSelection = cursor:hasSelection()
             if hasSelection then
-                regex = "\\C\\V" .. escapeRegex(table.concat(cursor:getVisualLines(), "\n"))
+                regex = "\\C\\V"
+                    .. escapeRegex(table.concat(cursor:getVisualLines(), "\n"))
                 if cursor:mode() == "V" or cursor:mode() == "S" then
                     cursor:feedkeys(cursor:atVisualStart() and "0" or "o0")
                 elseif not cursor:atVisualStart() then
@@ -551,7 +544,8 @@ function examples.matchAllAddCursors()
         local hasSelection = mainCursor:hasSelection()
         local atVisualStart = mainCursor:atVisualStart()
         if hasSelection then
-            regex = "\\C\\V" .. escapeRegex(table.concat(mainCursor:getVisualLines(), "\n"))
+            regex = "\\C\\V"
+                .. escapeRegex(table.concat(mainCursor:getVisualLines(), "\n"))
             if mainCursor:mode() == "V" or mainCursor:mode() == "S" then
                 mainCursor:feedkeys(atVisualStart and "0" or "o0")
             elseif not atVisualStart then
@@ -574,9 +568,7 @@ function examples.matchAllAddCursors()
                 end
             end, { addCursor = true })
             local newPos = mainCursor:getPos()
-            if origPos[1] == newPos[1]
-                and origPos[2] == newPos[2]
-            then
+            if origPos[1] == newPos[1] and origPos[2] == newPos[2] then
                 break
             end
         end
@@ -634,12 +626,15 @@ function examples.lineSkipCursor(direction)
     lineAddCursor(direction, false)
 end
 
-local setOpfunc = vim.fn[vim.api.nvim_exec([[
+local setOpfunc = vim.fn[vim.api.nvim_exec(
+    [[
   func s:setOpfunc(val)
     let &opfunc = a:val
   endfunc
   echon get(function('s:setOpfunc'), 'name')
-]], true)]
+]],
+    true
+)]
 
 function examples.addCursorOperator()
     local mode = vim.fn.mode()
@@ -655,9 +650,7 @@ function examples.addCursorOperator()
         local vPos = vim.fn.getpos("v")
         atVisualStart = curPos[2] < vPos[2]
             or curPos[2] == vPos[2]
-            and (curPos[3] < vPos[3]
-                or curPos[3] == vPos[3]
-                and curPos[4] < vPos[4])
+                and (curPos[3] < vPos[3] or curPos[3] == vPos[3] and curPos[4] < vPos[4])
     end
     setOpfunc(function()
         mc.action(function(ctx)
@@ -667,11 +660,8 @@ function examples.addCursorOperator()
             local changeStart = vim.fn.getpos("'[")
             local changeEnd = vim.fn.getpos("']")
             for i = changeStart[2], changeEnd[2] do
-                local col = math.min(
-                    curPos[3],
-                    vim.fn.col({ i, "$" }) - 1
-                )
-                lastCursor = mainCursor:clone():setPos({i, col})
+                local col = math.min(curPos[3], vim.fn.col({ i, "$" }) - 1)
+                lastCursor = mainCursor:clone():setPos({ i, col })
                 if not firstCursor then
                     firstCursor = lastCursor
                 end
